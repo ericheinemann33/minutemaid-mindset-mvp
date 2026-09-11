@@ -23,22 +23,10 @@ st.set_page_config(
     page_icon=favicon_file
 )
 
-# --- NATIVE MINDSET PROFILES ---
-MINDSET_PROFILES = {
-    "Minute Maid Zero Sugar": """
-        Target Audience: 49M US Adults (18+) who "don't do anything by halves" across work, family, and life.
-        Core Traits: Spontaneous (rely on intentional micro-variations to keep balanced), Striving (future-focused and ambitious, often forgetting to stop and enjoy what they have achieved), and Busy (minds constantly running through evolving responsibilities).
-        Life/Culture Context: They believe "There's always a better way," but feel completely inundated with societal "shoulds" about optimizing time and health. To cope with the noise, they put their heads down and push through the daily grind.
-        Consumer Insight ("Variety is vitality"): A genuine break feels completely out of reach amidst their chaotic responsibilities. Refusing to remain stuck on autopilot, they intentionally seek out small, easy deviations and improvements to feel more alive and joyful. 
-        Beverage Relationship: They view juice as a "micro-pause with zero penalty." It isn't a complex health rule to track or a guilty pleasure to pay for later. It is a quick, low-stakes victory that breaks up the routine without adding stress.
-    """,
-    "Minute Maid Carton/Refreshers": """
-        Target Audience: 49M US Adults (18+) who "don't do anything by halves" across work, family, and life.
-        Core Traits: Spontaneous (live in the moment, finding joy in daily side quests), Striving (focus on the momentum gained from achieving mini milestones), and Busy (know life changes rapidly, so they don't overthink today's choices).
-        Life/Culture Context: They actively reject traditional self-improvement culture that emphasizes discipline, deprivation, and the idea that "Nothing worth having comes easy." They believe life is simply too short to be miserable while chasing a distant, daunting goal.
-        Consumer Insight ("YOLTO - You only live today"): Instead of being overwhelmed by massive "big G-Goals," they advocate for stacking little wins and chasing small dopamine hits—singing in the car, discovering new things, and treating themselves. 
-        Beverage Relationship: They look to the category for a "spark of joy in the daily grind." Juice serves as an ultimate micro-reward and a fast, full-flavored win that provides instant energy, rather than a functional health ritual or a guilty pleasure earned through sacrifice.
-    """
+# --- UI INTRO TEXT (For 1-on-1 Screen) ---
+UI_INTROS = {
+    "Minute Maid Zero Sugar": "I am a busy, future-focused person who doesn't do anything by halves. I look for quick, low-stakes victories—like a great beverage—that give me a micro-pause without breaking my momentum or adding stress.",
+    "Minute Maid Carton/Refreshers": "I believe life is too short to be miserable chasing distant goals, so I focus on the moment. For me, a great beverage is a micro-reward that sparks instant joy in the daily grind."
 }
 
 # --- ROUNDPEG BRAND CSS INJECTION ---
@@ -276,10 +264,7 @@ def extract_text_from_uploaded_pdf(file):
         return f"Error reading PDF: {e}"
 
 def load_embedded_data(prefix, mindset_name):
-    # Check embedded dictionary first
-    if prefix == "profile" and mindset_name in MINDSET_PROFILES:
-        return MINDSET_PROFILES[mindset_name]
-        
+    # This will now strictly look for external files uploaded to the directory
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
     for ext in ['txt', 'pdf', 'xlsx']:
         file_path = f"{prefix}_{formatted_name}.{ext}"
@@ -425,12 +410,15 @@ elif st.session_state.app_mode == "landing":
 # ROUTE 2: 1-ON-1 INTERVIEW 
 # ==========================================
 elif st.session_state.app_mode == "1_on_1":
+    # Dynamically pull the intro text based on selected mindset
+    intro_text = UI_INTROS.get(st.session_state.selected_mindset, "I can help you understand our underlying values and how we make beverage choices.")
+    
     st.markdown(f'<div class="custom-main-header">Hello! I represent the {st.session_state.selected_mindset} mindset.</div>', unsafe_allow_html=True)
-    st.markdown('<div class="custom-body-copy">Based on the profile data you provided, I can help you understand our underlying values, routines, and how we make beverage choices.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="custom-body-copy">{intro_text} Want to know more about me and my choices?</div>', unsafe_allow_html=True)
     st.markdown('<div class="landing-sub-header">Ask me anything...</div>', unsafe_allow_html=True)
     
     if not mindset_data:
-        st.error("Awaiting embedded Mindset data. Please upload the appropriate file to your GitHub repository.")
+        st.error("Awaiting embedded Mindset data. Please upload your rich cross-tab file to your GitHub repository.")
         st.stop()
 
     for message in st.session_state.messages:
