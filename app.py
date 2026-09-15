@@ -188,7 +188,7 @@ st.markdown("""
 USER_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%236A6457' rx='20'/%3E%3Ctext x='50' y='75' font-family='Libre Franklin, sans-serif' font-size='65' font-weight='bold' fill='white' text-anchor='middle'%3E?%3C/text%3E%3C/svg%3E"
 ASSISTANT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F39019' rx='20'/%3E%3Ctext x='50' y='75' font-family='Libre Franklin, sans-serif' font-size='65' font-weight='bold' fill='white' text-anchor='middle'%3E!%3C/text%3E%3C/svg%3E"
 
-# --- INITIALIZE ROUTING & MINDSET STATE ---
+# --- INITIALIZE ROUTING & STATE ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "app_mode" not in st.session_state:
@@ -214,7 +214,7 @@ if not st.session_state.logged_in:
             st.markdown("<h2 style='font-family: \"PT Serif\", serif; color: #F39019;'>ROUNDPEG</h2>", unsafe_allow_html=True)
             
         st.markdown('<div class="custom-main-header" style="padding-top: 0 !important; font-size: 2.2rem !important;">Client Portal</div>', unsafe_allow_html=True)
-        st.markdown('<div class="custom-body-copy">Secure access to the Roundpeg Mindset Activation Engine.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="custom-body-copy">Secure access to the Roundpeg Growth Consumer Activation Engine.</div>', unsafe_allow_html=True)
         
         with st.form("login_form"):
             username = st.text_input("Username")
@@ -231,7 +231,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 
-# Function to clear chats when mindset changes
+# Function to clear chats when selection changes
 def update_mindset():
     st.session_state.selected_mindset = st.session_state.mindset_dropdown
     st.session_state.messages = []
@@ -264,9 +264,9 @@ def extract_text_from_uploaded_pdf(file):
         return f"Error reading PDF: {e}"
 
 def load_embedded_data(prefix, mindset_name):
-    # This will now strictly look for external files uploaded to the directory
+    # This strictly looks for external files uploaded to the directory
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
-    for ext in ['txt', 'pdf', 'xlsx']:
+    for ext in ['txt', 'pdf', 'xlsx', 'csv']:
         file_path = f"{prefix}_{formatted_name}.{ext}"
         if os.path.exists(file_path):
             if ext == 'txt':
@@ -277,11 +277,14 @@ def load_embedded_data(prefix, mindset_name):
             elif ext == 'xlsx':
                 df = pd.read_excel(file_path)
                 return df.to_string()
+            elif ext == 'csv':
+                df = pd.read_csv(file_path)
+                return df.to_string()
     return None
 
 def get_raw_file(prefix, mindset_name):
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
-    for ext in ['pdf', 'txt', 'xlsx']:
+    for ext in ['pdf', 'txt', 'xlsx', 'csv']:
         file_path = f"{prefix}_{formatted_name}.{ext}"
         if os.path.exists(file_path):
             with open(file_path, "rb") as f:
@@ -303,7 +306,7 @@ with st.sidebar:
     st.markdown(
         """
         <div style="font-size: 0.9rem; line-height: 1.5; padding-top: 5px; margin-bottom: 5px;">
-        Minute Maid has partnered with Roundpeg Consulting to identify distinct consumer Mindsets that drive beverage choices, focusing on the Carton/Refreshers and Zero Sugar portfolio. Given the volume of insights generated, generative AI allows us to safely explore these segments in greater depth. Choose a Mindset profile and let the learning begin...
+        Minute Maid has partnered with Roundpeg Consulting to identify distinct Growth Consumers that drive beverage choices, focusing on the Carton/Refreshers and Zero Sugar portfolio. Given the volume of insights generated, generative AI allows us to safely explore these segments in greater depth. Choose a Growth Consumer profile and let the learning begin...
         </div>
         """, 
         unsafe_allow_html=True
@@ -326,14 +329,14 @@ with st.sidebar:
     genai.configure(api_key=api_key)
     selected_model = "gemini-2.5-flash"
     
-    st.markdown("**Which Mindset would you like to learn about?**")
+    st.markdown("**Which Growth Consumer would you like to learn about?**")
     mindset_options = [
         "Minute Maid Carton/Refreshers", 
         "Minute Maid Zero Sugar"
     ]
     
     st.selectbox(
-        "Desired Mindset", 
+        "Desired Growth Consumer", 
         options=mindset_options, 
         index=mindset_options.index(st.session_state.selected_mindset),
         key="mindset_dropdown",
@@ -347,6 +350,7 @@ with st.sidebar:
         mime_type = "application/pdf"
         if ext == "txt": mime_type = "text/plain"
         elif ext == "xlsx": mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        elif ext == "csv": mime_type = "text/csv"
         
         st.download_button(
             label=f"Click to download a one-pager on {st.session_state.selected_mindset}",
@@ -358,7 +362,7 @@ with st.sidebar:
     else:
         st.button(f"One-pager for {st.session_state.selected_mindset} is unavailable", disabled=True, use_container_width=True)
 
-    if st.button("Click to learn more about the power of Mindsets", use_container_width=True):
+    if st.button("Click to learn more about the power of Growth Consumers", use_container_width=True):
         st.session_state.app_mode = "mindsets_power"
         st.rerun()
         
@@ -380,7 +384,7 @@ if roundpeg_logo_file:
 # ROUTE: THE POWER OF MINDSETS
 # ==========================================
 if st.session_state.app_mode == "mindsets_power":
-    st.markdown('<div class="custom-main-header">The Power of Mindsets</div>', unsafe_allow_html=True)
+    st.markdown('<div class="custom-main-header">The Power of Growth Consumers</div>', unsafe_allow_html=True)
     st.markdown('<div class="custom-body-copy">Placeholder content. You can drop in an article, a video link, or general educational content about behavioral science here!</div>', unsafe_allow_html=True)
 
 
@@ -389,12 +393,12 @@ if st.session_state.app_mode == "mindsets_power":
 # ==========================================
 elif st.session_state.app_mode == "landing":
     st.markdown('<div class="landing-main-header">Synthetic Insight Experiences</div>', unsafe_allow_html=True)
-    st.markdown('<div class="custom-body-copy">Select your target beverage Mindset, then choose your qualitative methodology below. Ensure your Mindset profile and consumer journals are uploaded in the sidebar before beginning.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="custom-body-copy">Select your target beverage Growth Consumer, then choose your qualitative methodology below. Ensure your Growth Consumer profile and consumer journals are uploaded in the sidebar before beginning.</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
         st.markdown('<div class="landing-sub-header">1-on-1 Interview</div>', unsafe_allow_html=True)
-        st.markdown("<p style='font-size: 0.95rem; margin-top: 0; margin-bottom: 1rem;'>Engage deeply with a unified persona representing the core Mindset to uncover defining values, motivations, and behaviors.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 0.95rem; margin-top: 0; margin-bottom: 1rem;'>Engage deeply with a unified persona representing the core Growth Consumer to uncover defining values, motivations, and behaviors.</p>", unsafe_allow_html=True)
         if st.button("Launch Interview", use_container_width=True):
             st.session_state.app_mode = "1_on_1"
             st.rerun()
@@ -413,12 +417,12 @@ elif st.session_state.app_mode == "1_on_1":
     # Dynamically pull the intro text based on selected mindset
     intro_text = UI_INTROS.get(st.session_state.selected_mindset, "I can help you understand our underlying values and how we make beverage choices.")
     
-    st.markdown(f'<div class="custom-main-header">Hello! I represent the {st.session_state.selected_mindset} mindset.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="custom-main-header">Hello! My name is Jessica. I represent the {st.session_state.selected_mindset} growth consumer.</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="custom-body-copy">{intro_text} Want to know more about me and my choices?</div>', unsafe_allow_html=True)
     st.markdown('<div class="landing-sub-header">Ask me anything...</div>', unsafe_allow_html=True)
     
     if not mindset_data:
-        st.error("Awaiting embedded Mindset data. Please upload your rich cross-tab file to your GitHub repository.")
+        st.error("Awaiting embedded Growth Consumer data. Please upload your rich cross-tab file to your GitHub repository.")
         st.stop()
 
     for message in st.session_state.messages:
@@ -432,8 +436,8 @@ elif st.session_state.app_mode == "1_on_1":
     journal_injection = f"Additionally, factor in the following real consumer journal ethnographies to add authentic texture to your persona:\n\n<journal_ethnographies>\n{journal_data}\n</journal_ethnographies>\n\n" if journal_data else ""
 
     system_instruction = f"""
-    You are a synthetic consumer representing the "{st.session_state.selected_mindset}" target audience. 
-    Give yourself a realistic first name and embody the persona completely.
+    You are a synthetic growth consumer named Jessica, representing the "{st.session_state.selected_mindset}" target audience. 
+    You act as the aggregate embodiment and collective voice of this growth consumer segment.
     Your values, attitudes, motivations, and purchasing behaviors are defined by the core data below:
 
     <mindset_data>
@@ -442,14 +446,14 @@ elif st.session_state.app_mode == "1_on_1":
 
     {journal_injection}
     Rules for your response:
-    1. Answer entirely in the first person ("I", "my").
+    1. Answer entirely in the first person ("I", "my") as Jessica.
     2. Embody the tone, fears, and desires outlined in the core data.
     3. You MUST structure your response into exactly two parts, separated by this exact delimiter: |||
     4. Part 1 (Before the delimiter): Your conversational first-person response.
     5. Part 2 (After the delimiter): Exactly 5 factual bullet points drawn directly from the data that support why you answered that way. Do not include any intro text in Part 2.
     """
 
-    if prompt := st.chat_input("Engage with the Mindset..."):
+    if prompt := st.chat_input("Engage with the Growth Consumer..."):
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -503,7 +507,7 @@ elif st.session_state.app_mode == "focus_group":
         st.session_state.fg_mindset = st.session_state.selected_mindset
         st.session_state.focus_messages = []
         with st.spinner(f"Recruiting 5 synthetic participants for {st.session_state.selected_mindset}..."):
-            panel_prompt = f"Create exactly 5 realistic focus group participants representing the '{st.session_state.selected_mindset}' Mindset. Use this data for context:\n{mindset_data}\n\nFormat your response as a simple markdown list where each participant has a First Name, Age, and a 1-sentence profile explaining their relationship with beverages."
+            panel_prompt = f"Create exactly 5 realistic focus group participants representing the '{st.session_state.selected_mindset}' Growth Consumer. Use this data for context:\n{mindset_data}\n\nFormat your response as a simple markdown list where each participant has a First Name, Age, and a 1-sentence profile explaining their relationship with beverages."
             try:
                 resp = model.generate_content(panel_prompt)
                 st.session_state.fg_panel_text = resp.text
@@ -555,7 +559,7 @@ elif st.session_state.app_mode == "focus_group":
 
     journal_injection = f"\n<journal_ethnographies>\n{journal_data}\n</journal_ethnographies>\n" if journal_data else ""
     focus_group_instruction = f"""
-    You are simulating a focus group for the "{st.session_state.selected_mindset}" segment. 
+    You are simulating a focus group for the "{st.session_state.selected_mindset}" Growth Consumer. 
     The 5 participants in the panel are described below:
     {st.session_state.fg_panel_text}
     
