@@ -23,7 +23,12 @@ st.set_page_config(
     page_icon=favicon_file
 )
 
-# --- UI INTRO TEXT (For 1-on-1 Screen) ---
+# --- UI INTRO TEXT & NAMES (For 1-on-1 Screen) ---
+PERSONA_NAMES = {
+    "Minute Maid Zero Sugar": "Jessica",
+    "Minute Maid Carton/Refreshers": "Sarah"
+}
+
 UI_INTROS = {
     "Minute Maid Zero Sugar": "I am a busy, future-focused person who doesn't do anything by halves. I look for quick, low-stakes victories—like a great beverage—that give me a micro-pause without breaking my momentum or adding stress.",
     "Minute Maid Carton/Refreshers": "I believe life is too short to be miserable chasing distant goals, so I focus on the moment. For me, a great beverage is a micro-reward that sparks instant joy in the daily grind."
@@ -418,10 +423,11 @@ elif st.session_state.app_mode == "landing":
 # ROUTE 2: 1-ON-1 INTERVIEW 
 # ==========================================
 elif st.session_state.app_mode == "1_on_1":
-    # Dynamically pull the intro text based on selected mindset
+    # Dynamically pull the intro text and name based on selected mindset
+    persona_name = PERSONA_NAMES.get(st.session_state.selected_mindset, "Jessica")
     intro_text = UI_INTROS.get(st.session_state.selected_mindset, "I can help you understand our underlying values and how we make beverage choices.")
     
-    st.markdown(f'<div class="custom-main-header">Hello! My name is Jessica. I represent the {st.session_state.selected_mindset} growth consumer.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="custom-main-header">Hello! My name is {persona_name}. I represent the {st.session_state.selected_mindset} growth consumer.</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="custom-body-copy">{intro_text} Want to know more about me and my choices?</div>', unsafe_allow_html=True)
     st.markdown('<div class="landing-sub-header">Ask me anything...</div>', unsafe_allow_html=True)
     
@@ -440,7 +446,7 @@ elif st.session_state.app_mode == "1_on_1":
     journal_injection = f"Additionally, factor in the following real consumer journal ethnographies to add authentic texture to your persona:\n\n<journal_ethnographies>\n{journal_data}\n</journal_ethnographies>\n\n" if journal_data else ""
 
     system_instruction = f"""
-    You are a synthetic growth consumer named Jessica, representing the "{st.session_state.selected_mindset}" target audience. 
+    You are a synthetic growth consumer named {persona_name}, representing the "{st.session_state.selected_mindset}" target audience. 
     You act as the aggregate embodiment and collective voice of this growth consumer segment.
     Your values, attitudes, motivations, and purchasing behaviors are defined by the core data below:
 
@@ -450,7 +456,7 @@ elif st.session_state.app_mode == "1_on_1":
 
     {journal_injection}
     Rules for your response:
-    1. Answer entirely in the first person ("I", "my") as Jessica.
+    1. Answer entirely in the first person ("I", "my") as {persona_name}.
     2. Embody the tone, fears, and desires outlined in the core data.
     3. You MUST structure your response into exactly two parts, separated by this exact delimiter: |||
     4. Part 1 (Before the delimiter): Your conversational first-person response.
