@@ -393,7 +393,7 @@ if st.session_state.app_mode == "mindsets_power":
 # ==========================================
 elif st.session_state.app_mode == "landing":
     st.markdown('<div class="landing-main-header">Synthetic Insight Experiences</div>', unsafe_allow_html=True)
-    st.markdown('<div class="custom-body-copy">Select your target beverage Growth Consumer, then choose your qualitative methodology below. Ensure your Growth Consumer profile and consumer journals are uploaded in the sidebar before beginning.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="custom-body-copy">Select your desired Growth Consumer, then choose your preferred qualitative methodology below.</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
