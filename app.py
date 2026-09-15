@@ -263,6 +263,8 @@ def extract_text_from_uploaded_pdf(file):
     except Exception as e:
         return f"Error reading PDF: {e}"
 
+# CACHE DECORATOR ADDED HERE
+@st.cache_data
 def load_embedded_data(prefix, mindset_name):
     # This strictly looks for external files uploaded to the directory
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
@@ -282,6 +284,8 @@ def load_embedded_data(prefix, mindset_name):
                 return df.to_string()
     return None
 
+# CACHE DECORATOR ADDED HERE
+@st.cache_data
 def get_raw_file(prefix, mindset_name):
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
     for ext in ['pdf', 'txt', 'xlsx', 'csv']:
