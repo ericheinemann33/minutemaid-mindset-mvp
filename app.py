@@ -204,6 +204,10 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "focus_messages" not in st.session_state:
     st.session_state.focus_messages = []
+if "heatmap_messages" not in st.session_state:
+    st.session_state.heatmap_messages = []
+if "compare_messages" not in st.session_state:
+    st.session_state.compare_messages = []
 
 # ==========================================
 # LOGIN WALL LOGIC
@@ -241,6 +245,7 @@ def update_mindset():
     st.session_state.selected_mindset = st.session_state.mindset_dropdown
     st.session_state.messages = []
     st.session_state.focus_messages = []
+    st.session_state.heatmap_messages = []
 
 # --- DATA PROCESSING UTILITIES ---
 def extract_text_from_pdf_path(file_path):
@@ -268,7 +273,6 @@ def extract_text_from_uploaded_pdf(file):
     except Exception as e:
         return f"Error reading PDF: {e}"
 
-# CACHE DECORATOR ADDED HERE
 @st.cache_data
 def load_embedded_data(prefix, mindset_name):
     # This strictly looks for external files uploaded to the directory
@@ -289,7 +293,6 @@ def load_embedded_data(prefix, mindset_name):
                 return df.to_string()
     return None
 
-# CACHE DECORATOR ADDED HERE
 @st.cache_data
 def get_raw_file(prefix, mindset_name):
     formatted_name = mindset_name.lower().replace(" ", "_").replace("/", "_")
@@ -419,11 +422,27 @@ elif st.session_state.app_mode == "landing":
             st.session_state.app_mode = "focus_group"
             st.rerun()
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown('<div class="landing-sub-header">Directional Heatmap</div>', unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 0.95rem; margin-top: 0; margin-bottom: 1rem;'>Rapidly test messaging or concepts to see which directions resonate most strongly with the selected Growth Consumer.</p>", unsafe_allow_html=True)
+        if st.button("Launch Heatmap", use_container_width=True):
+            st.session_state.app_mode = "heatmap"
+            st.rerun()
+            
+    with col4:
+        st.markdown('<div class="landing-sub-header">Compare & Contrast</div>', unsafe_allow_html=True)
+        st.markdown("<p style='font-size: 0.95rem; margin-top: 0; margin-bottom: 1rem;'>Ask one question and view side-by-side responses to see how Jessica and Sarah react differently based on their profiles.</p>", unsafe_allow_html=True)
+        if st.button("Launch Compare Tool", use_container_width=True):
+            st.session_state.app_mode = "compare"
+            st.rerun()
+
 # ==========================================
 # ROUTE 2: 1-ON-1 INTERVIEW 
 # ==========================================
 elif st.session_state.app_mode == "1_on_1":
-    # Dynamically pull the intro text and name based on selected mindset
     persona_name = PERSONA_NAMES.get(st.session_state.selected_mindset, "Jessica")
     intro_text = UI_INTROS.get(st.session_state.selected_mindset, "I can help you understand our underlying values and how we make beverage choices.")
     
@@ -466,9 +485,13 @@ elif st.session_state.app_mode == "1_on_1":
     if prompt := st.chat_input("Engage with the Growth Consumer..."):
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(prompt)
+        # Cap chat history context for speed (saving the last 6 interactions)
         st.session_state.messages.append({"role": "user", "content": prompt})
+        recent_messages = st.session_state.messages[-7:]
 
-        full_prompt = system_instruction + "\n\nUser Question: " + prompt
+        full_prompt = system_instruction + "\n\n"
+        for msg in recent_messages:
+            full_prompt += f"{msg['role'].capitalize()}: {msg['content']}\n"
         
         with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
             message_placeholder = st.empty()
@@ -612,8 +635,12 @@ elif st.session_state.app_mode == "focus_group":
             st.rerun()
 
     if len(st.session_state.focus_messages) > 0 and st.session_state.focus_messages[-1]["role"] == "user":
-        user_prompt = st.session_state.focus_messages[-1]["content"]
-        full_prompt = focus_group_instruction + "\n\nModerator Question/Input: " + user_prompt
+        # Cap chat history context
+        recent_messages = st.session_state.focus_messages[-7:]
+        full_prompt = focus_group_instruction + "\n\n"
+        for msg in recent_messages:
+            prefix = "Moderator Question/Input: " if msg["role"] == "user" else "Panel: "
+            full_prompt += f"{prefix}{msg['content']}\n\n"
         
         message_placeholder = st.empty()
         full_response = ""
@@ -628,3 +655,146 @@ elif st.session_state.app_mode == "focus_group":
             st.rerun()
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
+# ==========================================
+# ROUTE 4: RAPID DIRECTIONAL HEATMAP
+# ==========================================
+elif st.session_state.app_mode == "heatmap":
+    st.markdown('<div class="custom-main-header">Directional Heatmap</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="custom-body-copy">Paste distinct concepts below. The AI will assign directional resonance scores and explain the underlying friction or appeal based on the <strong>{st.session_state.selected_mindset}</strong> values.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="landing-sub-header">Input Concepts for testing...</div>', unsafe_allow_html=True)
+    
+    if not mindset_data:
+        st.error("Awaiting embedded Growth Consumer data. Please upload your rich cross-tab file to your GitHub repository.")
+        st.stop()
+
+    for message in st.session_state.heatmap_messages:
+        avatar_to_use = USER_AVATAR if message["role"] == "user" else ASSISTANT_AVATAR
+        with st.chat_message(message["role"], avatar=avatar_to_use):
+            st.markdown(message["content"])
+
+    heatmap_instruction = f"""
+    You are analyzing beverage concepts, claims, or messaging through the lens of the "{st.session_state.selected_mindset}" Growth Consumer. 
+    Your core values are defined below:
+    <mindset_data>
+    {mindset_data}
+    </mindset_data>
+
+    Task: The user will provide concepts or copy to evaluate. 
+    For each distinct concept provided:
+    1. Assign a directional "Resonance Score" (High, Medium, or Low).
+    2. Provide a brief, punchy explanation of WHY it succeeds or fails based explicitly on this Growth Consumer's data. What creates friction? What drives appeal?
+    Format your response cleanly with bold headers for each concept evaluated.
+    """
+
+    if prompt := st.chat_input("Paste concepts or copy here..."):
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(prompt)
+        st.session_state.heatmap_messages.append({"role": "user", "content": prompt})
+
+        # Cap chat history context
+        recent_messages = st.session_state.heatmap_messages[-5:]
+        full_prompt = heatmap_instruction + "\n\n"
+        for msg in recent_messages:
+            full_prompt += f"{msg['role'].capitalize()}: {msg['content']}\n"
+        
+        with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
+            message_placeholder = st.empty()
+            full_response = ""
+            try:
+                response = model.generate_content(full_prompt, stream=True)
+                for chunk in response:
+                    full_response += chunk.text
+                    message_placeholder.markdown(full_response + "▌")
+                message_placeholder.markdown(full_response)
+                st.session_state.heatmap_messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+
+# ==========================================
+# ROUTE 5: COMPARE & CONTRAST
+# ==========================================
+elif st.session_state.app_mode == "compare":
+    st.markdown('<div class="custom-main-header">Compare & Contrast</div>', unsafe_allow_html=True)
+    st.markdown('<div class="custom-body-copy">Ask a single question to see how Jessica (Zero Sugar) and Sarah (Carton/Refreshers) react differently based on their unique Growth Consumer profiles.</div>', unsafe_allow_html=True)
+    
+    data_zs = load_embedded_data("profile", "Minute Maid Zero Sugar")
+    data_cr = load_embedded_data("profile", "Minute Maid Carton/Refreshers")
+    
+    if not data_zs or not data_cr:
+        st.error("Missing data for one or both Growth Consumers. Please ensure both profile files are uploaded to your GitHub repository.")
+        st.stop()
+
+    # Render previous dual-responses
+    for msg in st.session_state.compare_messages:
+        if msg["role"] == "user":
+            with st.chat_message("user", avatar=USER_AVATAR):
+                st.markdown(msg["content"])
+        elif msg["role"] == "assistant":
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown('<div class="landing-sub-header" style="color: #F39019 !important;">Jessica (Zero Sugar)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color: #FFFFFF; border: 1px solid rgba(243, 144, 25, 0.15); padding: 1.2rem; border-radius: 12px;">{msg["content_zs"]}</div>', unsafe_allow_html=True)
+            with col2:
+                st.markdown('<div class="landing-sub-header" style="color: #6A6457 !important;">Sarah (Carton/Refreshers)</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color: #FFFFFF; border: 1px solid rgba(106, 100, 87, 0.15); padding: 1.2rem; border-radius: 12px;">{msg["content_cr"]}</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+    def generate_compare_prompt(name, segment, data, user_query):
+        return f"""
+        You are a synthetic growth consumer named {name}, representing the "{segment}" target audience. 
+        You act as the aggregate embodiment and collective voice of this segment.
+        Your values and attitudes are defined by this data:
+        
+        {data}
+        
+        Rule: Answer the user's question entirely in the first person ("I", "my") as {name} in one concise, highly conversational paragraph. Emphasize the distinct traits of your segment. Do NOT use bullet points.
+        
+        User Question: {user_query}
+        """
+
+    if prompt := st.chat_input("Ask a question to both Growth Consumers..."):
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(prompt)
+        
+        # We store user message, then immediately generate and store the dual response
+        st.session_state.compare_messages.append({"role": "user", "content": prompt})
+        
+        col1, col2 = st.columns(2)
+        
+        # Generate Jessica (Zero Sugar)
+        with col1:
+            st.markdown('<div class="landing-sub-header" style="color: #F39019 !important;">Jessica (Zero Sugar)</div>', unsafe_allow_html=True)
+            zs_placeholder = st.empty()
+            prompt_zs = generate_compare_prompt("Jessica", "Minute Maid Zero Sugar", data_zs, prompt)
+            
+            try:
+                resp_zs = model.generate_content(prompt_zs)
+                zs_text = resp_zs.text
+                zs_placeholder.markdown(f'<div style="background-color: #FFFFFF; border: 1px solid rgba(243, 144, 25, 0.15); padding: 1.2rem; border-radius: 12px;">{zs_text}</div>', unsafe_allow_html=True)
+            except Exception as e:
+                zs_text = f"Error generating response: {e}"
+                zs_placeholder.error(zs_text)
+                
+        # Generate Sarah (Carton/Refreshers)
+        with col2:
+            st.markdown('<div class="landing-sub-header" style="color: #6A6457 !important;">Sarah (Carton/Refreshers)</div>', unsafe_allow_html=True)
+            cr_placeholder = st.empty()
+            prompt_cr = generate_compare_prompt("Sarah", "Minute Maid Carton/Refreshers", data_cr, prompt)
+            
+            try:
+                resp_cr = model.generate_content(prompt_cr)
+                cr_text = resp_cr.text
+                cr_placeholder.markdown(f'<div style="background-color: #FFFFFF; border: 1px solid rgba(106, 100, 87, 0.15); padding: 1.2rem; border-radius: 12px;">{cr_text}</div>', unsafe_allow_html=True)
+            except Exception as e:
+                cr_text = f"Error generating response: {e}"
+                cr_placeholder.error(cr_text)
+                
+        st.session_state.compare_messages.append({
+            "role": "assistant",
+            "content_zs": zs_text,
+            "content_cr": cr_text
+        })
+        
+        # Rerun to clear the raw markdown stream and ensure UI is locked in
+        st.markdown("<br>", unsafe_allow_html=True)
